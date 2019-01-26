@@ -1,0 +1,27 @@
+{
+  "name": "liri_bot",
+  "version": "1.0.0",
+  "description": "LIRI stands for Language Interpretation and Recodnition Interface. LIRI will be a command line node app that takes in parameters adn gives you back data. Liri will search for Spitify songs, Bands in Town for concerts and OMDB for movies",
+  "main": "liri.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ptanzy/Liri_Bot.git"
+  },
+  "keywords": [
+    "Liri"
+  ],
+  "author": "ptanzy",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "inquirer": "^6.2.1",
+    "node-spotify-api": "^1.0.7"
+  },
+  "bugs": {
+    "url": "https://github.com/ptanzy/Liri_Bot/issues"
+  },
+  "homepage": "https://github.com/ptanzy/Liri_Bot#readme"
+}
