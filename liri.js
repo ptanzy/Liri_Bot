@@ -1,4 +1,5 @@
 var fs = require("fs");
+var readLine = require('readline');
 require("dotenv").config();
 var keys = require("./keys.js");
 var Spotify = require('node-spotify-api');
@@ -6,8 +7,11 @@ var axios = require("axios");
 var inquirer = require("inquirer");
 var spotify = new Spotify(keys.spotify);
 
-
+//User will enter one or more of the commands
+//"concert-this", "spotify-this-song", "movie-this", "do-what-it-says"
+//exception is do-what-it-says which if entered should be the only command
 var userCmnds = process.argv.slice(2);
+//the Inquirer input objects for each of the 3 general commands
 var liriCmnds = {
   "concert-this": {
     type: "input",
@@ -25,18 +29,24 @@ var liriCmnds = {
     message: "To search a movie enter the title..."
   }
 };
+//boolean initialized to false
 var randomCmnd = false;
+//command obj array to feed into inquirer function 
 var cmndPrompts = [];
+//iterate the commands the user originally input
 for(var i = 0; i<userCmnds.length; i++){
   var cmnd = userCmnds[i].trim();
+  //if "do-what-it-says" command is present and the only command
   if(cmnd === "do-what-it-says" && userCmnds.length === 1){
+    //set to true
     randomCmnd = true;
-    continue;
+    continue; //to next iteration
   }
-  var liriCmnd = liriCmnds[cmnd]
+  //if "do-what-it-says" command not present or present but not only command
+  var liriCmnd = liriCmnds[cmnd] //cmnd is key in object hash
   if(liriCmnd){
-    cmndPrompts.push(liriCmnd);
-  }else{
+    cmndPrompts.push(liriCmnd); //push inquirer object for cmnd
+  }else{ //otherwise the cmnd is an invalid one not in obj hash
     console.log("Command: ["+cmnd+"] is invalid. (hint"+
       " do-what-it-says command is incompatible with other commands");
   }
@@ -46,7 +56,7 @@ for(var i = 0; i<userCmnds.length; i++){
 
 
 // Created a series of questions
-inquirer.prompt(cmndPrompts).then(async function(user) {
+inquirer.prompt(cmndPrompts).then(async function(user) { //questions are asked and then
   if(user.song){
     await searchSong(user.song.trim().split(' ').join('+'));
   }
@@ -56,17 +66,19 @@ inquirer.prompt(cmndPrompts).then(async function(user) {
   if(user.movie){
     await searchMovie(user.movie.trim().split(' ').join('+'));
   }
-
+  //if "do-what-it-says" was input
   if(randomCmnd === true){
-    randomCmnd = false;
-    //TODO random logic
-    var lineReader = require('readline').createInterface({
+    randomCmnd = false; //reset
+    //creates line by line reader
+    var lineReader = readLine.createInterface({
       input: require('fs').createReadStream('random.txt')
     });
     lineReader.on('error', function(err){
-      // error on the stream
+      console.log(err);
     });
     lineReader.on('line', async function (line) {
+      //reads random.txt commands line by line
+      //spotify-this-song,"I Want it That Way"
       var arr = line.split(",");
       var cmnd = arr[0];
       var input = arr[1];
