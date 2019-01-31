@@ -7,7 +7,7 @@ var inquirer = require("inquirer");
 var spotify = new Spotify(keys.spotify);
 
 
-var userCmnds = process.argv.slice(4);
+var userCmnds = process.argv.slice(2);
 var liriCmnds = {
   "concert-this": {
     type: "input",
@@ -29,7 +29,7 @@ var randomCmnd = false;
 var cmndPrompts = [];
 for(var i = 0; i<userCmnds.length; i++){
   var cmnd = userCmnds[i].trim();
-  if(cmnd === "do-what-it-says"){
+  if(cmnd === "do-what-it-says" && userCmnds.length === 1){
     randomCmnd = true;
     continue;
   }
@@ -37,79 +37,61 @@ for(var i = 0; i<userCmnds.length; i++){
   if(liriCmnd){
     cmndPrompts.push(liriCmnd);
   }else{
-    console.log("Command: ["+cmnd+"] is invalid")
+    console.log("Command: ["+cmnd+"] is invalid. (hint"+
+      " do-what-it-says command is incompatible with other commands");
   }
 
 }
 
-//
-cmndPrompts2 = [{
-  type: "input",
-  name: "concert",
-  message: "To search a concert enter an artist/band name"
-},
-{
-  type: "input",
-  name: "song",
-  message: "To search a song enter the title..."
-},
-{
-  type: "input",
-  name: "movie",
-  message: "To search a movie enter the title..."
-}]
-//
+
 
 // Created a series of questions
-inquirer.prompt(cmndPrompts).then(function(user) {
-  // if(user.song){
-  //   console.log(user.song)
-  //   searchSong(user.song.trim().split(' ').join('+'));
-  // }
-  // if(user.concert){
-  //   console.log(user.concert)
-  //   // Then run a request with axios to the OMDB API with the movie specified
-  //   searchConcert(user.concert.trim().split(' ').join('+'));
-  // }
-  // if(user.movie){
-  //   console.log(user.movie);
-  //   // Then run a request with axios to the OMDB API with the movie specified
-  //   searchMovie(user.movie.trim().split(' ').join('+'));
-  // }
+inquirer.prompt(cmndPrompts).then(async function(user) {
+  if(user.song){
+    await searchSong(user.song.trim().split(' ').join('+'));
+  }
+  if(user.concert){
+    await searchConcert(user.concert.trim().split(' ').join('+'));
+  }
+  if(user.movie){
+    await searchMovie(user.movie.trim().split(' ').join('+'));
+  }
 
-  // if(randomCmnd === true){
-  //   //TODO random logic
-  //   var lineReader = require('readline').createInterface({
-  //     input: require('fs').createReadStream('random.txt')
-  //   });
-  //   lineReader.on('error', function(err){
-  //     // error on the stream
-  //   });
-  //   lineReader.on('line', async function (line) {
-  //     var arr = line.split(",");
-  //     var cmnd = arr[0];
-  //     var input = arr[1];
-  //     switch(cmnd) {
-  //       case "concert-this":
-  //         searchConcert(input);
-  //         break;
-  //       case "spotify-this-song":
-  //         searchSong(input);
-  //         break;
-  //       case "movie-this":
-  //         searchMovie(input);
-  //         break;
-  //       default:
-  //         console.log("random.txt command is invalid")
-  //     }
-  //   });
-  // }
+  if(randomCmnd === true){
+    randomCmnd = false;
+    //TODO random logic
+    var lineReader = require('readline').createInterface({
+      input: require('fs').createReadStream('random.txt')
+    });
+    lineReader.on('error', function(err){
+      // error on the stream
+    });
+    lineReader.on('line', async function (line) {
+      var arr = line.split(",");
+      var cmnd = arr[0];
+      var input = arr[1];
+      switch(cmnd) {
+        case "concert-this":
+          await searchConcert(input);
+          break;
+        case "spotify-this-song":
+          await searchSong(input);
+          break;
+        case "movie-this":
+          await searchMovie(input);
+          break;
+        default:
+          console.log("random.txt command is invalid")
+      }
+    });
+  }
 });
 
-function searchSong(song){
-  spotify.search({ type: 'track', query: 'All the Small Things' }, function(err, data) {
+async function searchSong(song){
+  spotify.search({ type: 'track', query: song }, function(err, data) {
     if (err) {
-      return console.log('Error occurred: ' + err);
+      console.log('Error occurred: ' + err);
+      return;
     }
     if( data.tracks.items.length > 0){
       var song = data.tracks.items[Math.floor(Math.random()*data.tracks.items.length)];
@@ -123,10 +105,11 @@ function searchSong(song){
   });
 }
 
-function searchConcert(concert){
+async function searchConcert(concert){
   axios.get("https://rest.bandsintown.com/artists/" + concert + "/events?app_id=codingbootcamp").then(
     function(response) {
-      if(response.statusText === "OK" && response.data > 0){
+      var failure = "{error=An error occurred while searching.}";
+      if(response.statusText === "OK" && response.data.length > 0 && typeof response.data !== "string"){
         var concert = response.data[Math.floor(Math.random()*response.data.length)];
         var venue = concert.venue;
         console.log("-------------------CONCERT-------------------");
@@ -143,20 +126,25 @@ function searchConcert(concert){
   );
 }
 
-function searchMovie(movie){
+async function searchMovie(movie){
   axios.get("http://www.omdbapi.com/?t="+movie+"&y=&plot=short&apikey=trilogy").then(
     function(response) {
-      var info = response.data;
-      console.log("-------------------MOVIE-------------------");
-      console.log("Title: " + info.Title);
-      console.log("Released: " + info.Released);
-      console.log("IMDB Rating: " + info.imdbRating);
-      console.log("Rotten Rating" + info.Ratings[1]);
-      console.log("Country" + info.Country);
-      console.log("Language" + info.Language);
-      console.log("Plot" + info.Plot);
-      console.log("Actors" + info.Actors);
-      console.log("---------------------------------------------");
+      var failure = "{error=An error occurred while searching.}";
+      if(response.statusText === "OK" && response.data && typeof response.data !== "string"){
+        var info = response.data;
+        console.log("-------------------MOVIE-------------------");
+        console.log("Title: " + info.Title);
+        console.log("Released: " + info.Released);
+        console.log("IMDB Rating: " + info.imdbRating);
+        console.log("Rotten Rating" + info.Ratings[1]);
+        console.log("Country: " + info.Country);
+        console.log("Language: " + info.Language);
+        console.log("Plot: " + info.Plot);
+        console.log("Actors: " + info.Actors);
+        console.log("---------------------------------------------");
+      }else{
+        console.log("Status: "+response.statusText+" and data length: "+response.data);
+      }
     }
   );
 }

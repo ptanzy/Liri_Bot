@@ -10,7 +10,8 @@
       "name": "With TTY", //"Launch Program",
       "program": "${workspaceFolder}\\liri.js",
       "console": "integratedTerminal",
-      "args": ["node", "liri", "concert-this", "spotify-this-song", "movie-this", "do-what-it-says"]
+      "args": ["do-what-it-says"]
+      //"args": ["concert-this", "spotify-this-song", "movie-this", "do-what-it-says"]
     }
   ]
 }
